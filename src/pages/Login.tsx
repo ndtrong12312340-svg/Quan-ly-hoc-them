@@ -103,6 +103,13 @@ export default function Login() {
     e.preventDefault();
     setIsRegistering(true);
     setError('');
+    
+    if (!regForm.classSelected || !regForm.parentName || !regForm.parentPhone) {
+      setError('Vui lòng điền đầy đủ các thông tin bắt buộc: Lớp học, Tên phụ huynh và Số điện thoại phụ huynh.');
+      setIsRegistering(false);
+      return;
+    }
+
     try {
       const nameClean = removeAccents(regForm.fullName).toLowerCase().replace(/\s+/g, '');
       let generatedEmail = `${nameClean}@gmail.com`;
@@ -389,7 +396,7 @@ export default function Login() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="md:col-span-2">
                          <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Họ tên phụ huynh</label>
-                         <input type="text" value={regForm.parentName} onChange={e => setRegForm({...regForm, parentName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition" />
+                         <input type="text" required value={regForm.parentName} onChange={e => setRegForm({...regForm, parentName: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition" />
                       </div>
                       <div>
                          <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Quan hệ với học sinh</label>
@@ -397,7 +404,7 @@ export default function Login() {
                       </div>
                       <div>
                          <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Số điện thoại liên hệ</label>
-                         <input type="tel" value={regForm.parentPhone} onChange={e => setRegForm({...regForm, parentPhone: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition" />
+                         <input type="tel" required value={regForm.parentPhone} onChange={e => setRegForm({...regForm, parentPhone: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition" />
                       </div>
                     </div>
                   </div>
@@ -422,7 +429,7 @@ export default function Login() {
 
                       <label className="block text-sm font-bold text-slate-800 mb-3">Chọn lớp học:</label>
                       <select 
-                        required={availableClasses.filter(c => c.block === regForm.block).length > 0}
+                        required 
                         value={regForm.classSelected} 
                         onChange={(e) => setRegForm({...regForm, classSelected: e.target.value})}
                         className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition font-semibold text-slate-700"
@@ -433,7 +440,7 @@ export default function Login() {
                         ))}
                       </select>
                       {availableClasses.filter(c => c.block === regForm.block).length === 0 && (
-                        <p className="text-xs text-amber-600 mt-2 mt-2 bg-amber-50 rounded-lg p-3">* Chưa có danh sách lớp cho khối này. Bạn có thể bỏ qua và tiếp tục nộp đơn.</p>
+                        <p className="text-xs text-rose-600 mt-2 bg-rose-50 rounded-lg p-3">* Chưa có danh sách lớp cho khối này. Vui lòng liên hệ giáo viên để được hỗ trợ.</p>
                       )}
                     </div>
                   </div>

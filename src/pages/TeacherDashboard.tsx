@@ -133,16 +133,8 @@ export default function TeacherDashboard() {
       });
       setKnowledges(knowledgesList);
 
-      // Derive available classes from exams and knowledge
+      // Derive available classes from explicitly created classes only
       const classes = new Set<string>();
-      examsList.forEach(e => {
-        if (e.assignedClasses && Array.isArray(e.assignedClasses)) {
-          e.assignedClasses.forEach((c: string) => classes.add(c));
-        }
-      });
-      knowledgesList.forEach(k => {
-        if (k.className) classes.add(k.className);
-      });
       
       // Fetch classes
       const qClasses = query(collection(db, 'classes'), where('teacherId', '==', appUser.uid));
@@ -837,8 +829,18 @@ export default function TeacherDashboard() {
   const handleDeleteClass = async () => {
     if (!classToDelete) return;
     try {
+      const classObj = teacherClasses.find(c => c.id === classToDelete);
       await deleteDoc(doc(db, 'classes', classToDelete));
-      setTeacherClasses(teacherClasses.filter(c => c.id !== classToDelete));
+      const newTeacherClasses = teacherClasses.filter(c => c.id !== classToDelete);
+      setTeacherClasses(newTeacherClasses);
+      
+      if (classObj) {
+        setAvailableClasses(prev => prev.filter(name => name !== classObj.name));
+        if (activeClass === classObj.name) {
+           setActiveClass(newTeacherClasses.length > 0 ? newTeacherClasses[0].name : '');
+        }
+      }
+
       setClassToDelete(null);
     } catch (error) {
       console.error(error);
@@ -2006,6 +2008,29 @@ export default function TeacherDashboard() {
               </button>
               <button onClick={handleExtendTime} className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
                 Lưu thay đổi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Class Confirm Modal */}
+      {classToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center mb-4 text-red-600">
+              <AlertTriangle className="w-6 h-6 mr-2" />
+              <h3 className="text-lg font-medium text-gray-900">Xác nhận xóa lớp học</h3>
+            </div>
+            <p className="text-sm text-gray-500 mb-6">
+              Bạn có chắc chắn muốn xóa lớp này không? Hành động này không thể hoàn tác.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button onClick={() => setClassToDelete(null)} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                Hủy
+              </button>
+              <button onClick={handleDeleteClass} className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 flex items-center">
+                Xóa lớp
               </button>
             </div>
           </div>
