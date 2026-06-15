@@ -42,6 +42,7 @@ export default function TeacherDashboard() {
   
   const [isImporting, setIsImporting] = useState(false);
   const [viewingStudentExams, setViewingStudentExams] = useState<any>(null);
+  const [viewingStudentDetails, setViewingStudentDetails] = useState<any>(null);
   const [editingStudent, setEditingStudent] = useState<any>(null);
   const [editStudentData, setEditStudentData] = useState({ name: '', className: '', email: '', password: '' });
   const [updateStudentError, setUpdateStudentError] = useState('');
@@ -1367,27 +1368,17 @@ export default function TeacherDashboard() {
                         return (
                         <tr key={student.id} className={`hover:bg-gray-50 transition-colors ${student.status === 'pending' ? 'bg-amber-50/50' : ''}`}>
                           <td className="px-3 py-3 text-sm font-semibold text-gray-900" title={student.name}>
-                            <div className="font-bold text-gray-900">{student.name}</div>
+                            <div 
+                              className="font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer inline-block" 
+                              onClick={() => setViewingStudentDetails(student)}
+                            >
+                              {student.name}
+                            </div>
                             {student.status === 'pending' && (
-                              <span className="mt-1 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                              <span className="mt-1 ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
                                 CHỜ PHÊ DUYỆT
                               </span>
                             )}
-                            <div className="text-[11px] text-gray-500 font-normal space-y-0.5 mt-1">
-                              {student.dob && <div>🎂 Ngày sinh: {student.dob.split('-').reverse().join('/')}</div>}
-                              {student.zalo && <div>💬 Zalo/SĐT: {student.zalo}</div>}
-                              {student.facebook && (
-                                <a 
-                                  href={student.facebook.startsWith('http') ? student.facebook : `https://${student.facebook}`} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="text-indigo-600 hover:underline block truncate max-w-[180px]"
-                                  title={student.facebook}
-                                >
-                                  🔗 FB: {student.facebook}
-                                </a>
-                              )}
-                            </div>
                           </td>
                           <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600">
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -1538,7 +1529,14 @@ export default function TeacherDashboard() {
 
                     return (
                     <tr key={student.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{student.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                         <div 
+                           className="font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer inline-block" 
+                           onClick={() => setViewingStudentDetails(student)}
+                         >
+                           {student.name}
+                         </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {student.className}
@@ -1695,6 +1693,93 @@ export default function TeacherDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Viewing Student Details Modal */}
+      {viewingStudentDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h3 className="text-xl font-bold text-gray-900">Thông tin chi tiết Học sinh</h3>
+              <button 
+                onClick={() => setViewingStudentDetails(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Thông tin cá nhân</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-500 mb-1">Họ và tên</span>
+                      <span className="text-gray-900 font-medium">{viewingStudentDetails.name}</span>
+                    </div>
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-500 mb-1">Ngày sinh</span>
+                      <span className="text-gray-900">{viewingStudentDetails.dob ? viewingStudentDetails.dob.split('-').reverse().join('/') : <span className="text-gray-400 italic">Chưa cập nhật</span>}</span>
+                    </div>
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-500 mb-1">Lớp</span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                        {viewingStudentDetails.className}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-500 mb-1">Trường</span>
+                      <span className="text-gray-900">{viewingStudentDetails.schoolInfo || <span className="text-gray-400 italic">Chưa cập nhật</span>}</span>
+                    </div>
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-500 mb-1">Địa chỉ</span>
+                      <span className="text-gray-900">{viewingStudentDetails.address || <span className="text-gray-400 italic">Chưa cập nhật</span>}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Thông tin liên hệ</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-500 mb-1">Email đăng nhập</span>
+                      <span className="text-gray-900">{viewingStudentDetails.email}</span>
+                    </div>
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-500 mb-1">Số Zalo/SĐT Học sinh</span>
+                      <span className="text-gray-900">{viewingStudentDetails.zalo || <span className="text-gray-400 italic">Chưa cập nhật</span>}</span>
+                    </div>
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-500 mb-1">Facebook cá nhân</span>
+                      {viewingStudentDetails.facebook ? (
+                        <a 
+                          href={viewingStudentDetails.facebook.startsWith('http') ? viewingStudentDetails.facebook : `https://${viewingStudentDetails.facebook}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-indigo-600 hover:text-indigo-800 hover:underline break-all"
+                        >
+                          {viewingStudentDetails.facebook}
+                        </a>
+                      ) : (
+                        <span className="text-gray-400 italic">Chưa cập nhật</span>
+                      )}
+                    </div>
+                    <div className="pt-2 border-t border-gray-100">
+                      <span className="block text-xs font-semibold text-indigo-500 mb-1">Phụ huynh (Họ tên)</span>
+                      <span className="text-gray-900 font-medium">{viewingStudentDetails.parentName || <span className="text-gray-400 italic text-sm">Chưa cập nhật</span>}</span>
+                      {viewingStudentDetails.parentRelation && <span className="ml-2 text-xs text-gray-500">({viewingStudentDetails.parentRelation})</span>}
+                    </div>
+                    <div>
+                      <span className="block text-xs font-semibold text-indigo-500 mb-1">Số điện thoại Phụ huynh</span>
+                      <span className="text-gray-900 font-medium">{viewingStudentDetails.parentPhone || <span className="text-gray-400 italic text-sm">Chưa cập nhật</span>}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
