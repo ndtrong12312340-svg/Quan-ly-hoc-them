@@ -32,6 +32,8 @@ export default function TeacherDashboard() {
   const [newKnowledge, setNewKnowledge] = useState({ title: '', block: '10', className: '', fileUrl: '' });
   const [isCreatingKnowledge, setIsCreatingKnowledge] = useState(false);
   const [knowledgeToDelete, setKnowledgeToDelete] = useState<string | null>(null);
+  const [editingKnowledge, setEditingKnowledge] = useState<any>(null);
+  const [isUpdatingKnowledge, setIsUpdatingKnowledge] = useState(false);
 
   // Students state
   const [students, setStudents] = useState<any[]>([]);
@@ -913,6 +915,51 @@ export default function TeacherDashboard() {
     }
   };
 
+  const handleUpdateKnowledge = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingKnowledge || !appUser?.uid) return;
+    setIsUpdatingKnowledge(true);
+    
+    try {
+      const oldKnowledge = knowledges.find(k => k.id === editingKnowledge.id);
+      
+      await updateDoc(doc(db, 'knowledges', editingKnowledge.id), {
+        title: editingKnowledge.title,
+        block: editingKnowledge.block,
+        className: editingKnowledge.className ? editingKnowledge.className.trim() : '',
+        fileUrl: editingKnowledge.fileUrl,
+      });
+      
+      setKnowledges(knowledges.map(k => k.id === editingKnowledge.id ? { ...k, ...editingKnowledge, className: editingKnowledge.className ? editingKnowledge.className.trim() : '' } : k));
+      setEditingKnowledge(null);
+      
+      // Update class summaries for both old and new classes to remove/add knowledge correctly
+      const classTitlesToSync = new Set<string>();
+      if (editingKnowledge.className) classTitlesToSync.add(editingKnowledge.className.trim());
+      else {
+         const blockClasses = availableClasses.filter(c => c.startsWith(editingKnowledge.block));
+         blockClasses.forEach(cls => classTitlesToSync.add(cls));
+      }
+
+      if (oldKnowledge?.className) classTitlesToSync.add(oldKnowledge.className.trim());
+      else if (oldKnowledge?.block) {
+         const blockClasses = availableClasses.filter(c => c.startsWith(oldKnowledge.block));
+         blockClasses.forEach(cls => classTitlesToSync.add(cls));
+      }
+
+      for (const cls of classTitlesToSync) {
+        if (cls) await syncClassSummary(cls);
+      }
+      
+      await syncTeacherSummary(appUser.uid);
+    } catch (error) {
+      console.error(error);
+      alert('Lỗi khi cập nhật tài liệu.');
+    } finally {
+      setIsUpdatingKnowledge(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-50 relative overflow-hidden">
       {/* Sidebar */}
@@ -1159,7 +1206,12 @@ export default function TeacherDashboard() {
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Lớp (Tùy chọn)</label>
-                    <input type="text" value={newKnowledge.className} onChange={e => setNewKnowledge({...newKnowledge, className: e.target.value})} placeholder="Nhập tên lớp nếu muốn giới hạn (Vd: 12A1)" className="block w-full border border-gray-300 rounded-xl shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors" />
+                    <select value={newKnowledge.className} onChange={e => setNewKnowledge({...newKnowledge, className: e.target.value})} className="block w-full border border-gray-300 rounded-xl shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors">
+                      <option value="">-- Dành cho tất cả các lớp trong khối --</option>
+                      {teacherClasses.filter(c => c.block === newKnowledge.block).map(c => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Link tài liệu (Hình ảnh / PDF / Drive)</label>
@@ -1208,7 +1260,13 @@ export default function TeacherDashboard() {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {k.className || <span className="text-gray-400 italic">Tất cả</span>}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right space-x-2">
+                              <button
+                                onClick={() => setEditingKnowledge(k)}
+                                className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                              >
+                                Sửa
+                              </button>
                               <button
                                 onClick={() => setKnowledgeToDelete(k.id)}
                                 className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors font-medium"
@@ -2046,6 +2104,73 @@ export default function TeacherDashboard() {
                 Xóa toàn bộ
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Knowledge Confirm Modal */}
+      {knowledgeToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center mb-4 text-red-600">
+              <AlertTriangle className="w-6 h-6 mr-2" />
+              <h3 className="text-lg font-medium text-gray-900">Xác nhận xóa tài liệu</h3>
+            </div>
+            <p className="text-sm text-gray-500 mb-6">
+              Bạn có chắc chắn muốn xóa tài liệu này không? Hành động này không thể hoàn tác.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button onClick={() => setKnowledgeToDelete(null)} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                Hủy
+              </button>
+              <button onClick={handleDeleteKnowledge} className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 flex items-center">
+                Xóa tài liệu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Knowledge Modal */}
+      {editingKnowledge && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-xl p-6 shadow-2xl">
+            <h3 className="text-xl font-bold text-gray-900 mb-6">Sửa thông tin tài liệu</h3>
+            <form onSubmit={handleUpdateKnowledge} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Tên bài học</label>
+                <input type="text" required value={editingKnowledge.title} onChange={e => setEditingKnowledge({...editingKnowledge, title: e.target.value})} className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Khối</label>
+                <select value={editingKnowledge.block} onChange={e => setEditingKnowledge({...editingKnowledge, block: e.target.value, className: ''})} className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                  <option value="10">Khối 10</option>
+                  <option value="11">Khối 11</option>
+                  <option value="12">Khối 12</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Lớp (Tùy chọn)</label>
+                <select value={editingKnowledge.className} onChange={e => setEditingKnowledge({...editingKnowledge, className: e.target.value})} className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                  <option value="">-- Dành cho tất cả các lớp trong khối --</option>
+                  {teacherClasses.filter(c => c.block === editingKnowledge.block).map(c => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Link tài liệu</label>
+                <input type="url" required value={editingKnowledge.fileUrl} onChange={e => setEditingKnowledge({...editingKnowledge, fileUrl: e.target.value})} className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+              </div>
+              <div className="pt-4 flex justify-end space-x-3">
+                <button type="button" onClick={() => setEditingKnowledge(null)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50" disabled={isUpdatingKnowledge}>
+                  Hủy
+                </button>
+                <button type="submit" className="px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 flex items-center" disabled={isUpdatingKnowledge}>
+                  {isUpdatingKnowledge ? 'Đang lưu...' : 'Lưu thay đổi'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
