@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { fetchClassDataDirectly } from '../lib/syncUtils';
 import { collection, query, where, getDocs, getDoc, doc, updateDoc } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 import { LogOut, PlayCircle, CheckCircle, RefreshCw, MessageCircle, AlertCircle, BookOpen, User, Calendar, Settings, LayoutDashboard, Database } from 'lucide-react';
@@ -48,42 +49,59 @@ export default function StudentDashboard() {
 
   const [hasFetchedSummary, setHasFetchedSummary] = useState(false);
 
-  const fetchClassSummary = async () => {
+  const fetchClassSummary = async (forceDirect = false) => {
     if (!appUser?.className || hasFetchedSummary) return;
     setIsRefreshing(true);
     try {
-      const summaryRef = doc(db, 'class_summaries', appUser.className);
-      const summarySnap = await getDoc(summaryRef);
+      const data = await fetchClassDataDirectly(appUser.className);
       
-      if (summarySnap.exists()) {
-        const data = summarySnap.data();
+      const knowledgesList = data.knowledges || [];
+      knowledgesList.sort((a: any, b: any) => {
+        const titleA = a.title || '';
+        const titleB = b.title || '';
         
-        const knowledgesList = data.knowledges || [];
-        knowledgesList.sort((a: any, b: any) => {
-          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return timeB - timeA;
-        });
-        setKnowledges(knowledgesList);
+        const getChapter = (title: string) => {
+          const match = title.match(/chương\s*(\d+)/i);
+          return match ? parseInt(match[1], 10) : 0;
+        };
+      
+        const getLesson = (title: string) => {
+          const match = title.match(/bài\s*(\d+)/i);
+          return match ? parseInt(match[1], 10) : 0;
+        };
+        
+        const chapterA = getChapter(titleA);
+        const chapterB = getChapter(titleB);
+        
+        if (chapterA !== chapterB) {
+          return chapterA - chapterB;
+        }
+        
+        const lessonA = getLesson(titleA);
+        const lessonB = getLesson(titleB);
+        
+        if (lessonA !== lessonB) {
+          return lessonA - lessonB;
+        }
+        
+        return titleA.localeCompare(titleB, 'vi', { numeric: true, sensitivity: 'base' });
+      });
+      setKnowledges(knowledgesList);
 
-        const examsList = data.exams || [];
-        examsList.sort((a: any, b: any) => {
-          const titleA = a.title || '';
-          const titleB = b.title || '';
-          const matchA = titleA.match(/\d+/);
-          const matchB = titleB.match(/\d+/);
-          if (matchA && matchB) {
-            const numA = parseInt(matchA[0], 10);
-            const numB = parseInt(matchB[0], 10);
-            if (numA !== numB) return numA - numB;
-          }
-          return titleA.localeCompare(titleB);
-        });
-        setExams(examsList);
-      } else {
-        setKnowledges([]);
-        setExams([]);
-      }
+      const examsList = data.exams || [];
+      examsList.sort((a: any, b: any) => {
+        const titleA = a.title || '';
+        const titleB = b.title || '';
+        const matchA = titleA.match(/\d+/);
+        const matchB = titleB.match(/\d+/);
+        if (matchA && matchB) {
+          const numA = parseInt(matchA[0], 10);
+          const numB = parseInt(matchB[0], 10);
+          if (numA !== numB) return numA - numB;
+        }
+        return titleA.localeCompare(titleB);
+      });
+      setExams(examsList);
       setHasFetchedSummary(true);
     } catch (err: any) {
       console.error("Error fetching class summary:", err);
@@ -113,7 +131,7 @@ export default function StudentDashboard() {
     if (activeTab === 'knowledge' || activeTab === 'exams') {
       setHasFetchedSummary(false);
       setTimeout(() => {
-        fetchClassSummary();
+        fetchClassSummary(true);
       }, 0);
     }
   };

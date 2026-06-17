@@ -130,9 +130,38 @@ export default function TeacherDashboard() {
       setExams(examsList);
 
       knowledgesList.sort((a: any, b: any) => {
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return timeB - timeA;
+        const blockA = parseInt(a.block || '0', 10);
+        const blockB = parseInt(b.block || '0', 10);
+        if (blockA !== blockB) return blockA - blockB;
+
+        const titleA = a.title || '';
+        const titleB = b.title || '';
+        
+        const getChapter = (title: string) => {
+          const match = title.match(/chương\s*(\d+)/i);
+          return match ? parseInt(match[1], 10) : 0;
+        };
+      
+        const getLesson = (title: string) => {
+          const match = title.match(/bài\s*(\d+)/i);
+          return match ? parseInt(match[1], 10) : 0;
+        };
+        
+        const chapterA = getChapter(titleA);
+        const chapterB = getChapter(titleB);
+        
+        if (chapterA !== chapterB) {
+          return chapterA - chapterB;
+        }
+        
+        const lessonA = getLesson(titleA);
+        const lessonB = getLesson(titleB);
+        
+        if (lessonA !== lessonB) {
+          return lessonA - lessonB;
+        }
+        
+        return titleA.localeCompare(titleB, 'vi', { numeric: true, sensitivity: 'base' });
       });
       setKnowledges(knowledgesList);
 
@@ -872,7 +901,7 @@ export default function TeacherDashboard() {
         await syncClassSummary(targetClass);
       } else if (newKnowledge.block) {
         // Sync all available classes in this block
-        const blockClasses = availableClasses.filter(c => c.startsWith(newKnowledge.block));
+        const blockClasses = teacherClasses.filter(c => c.block === newKnowledge.block).map(c => c.name);
         for (const cls of blockClasses) {
           await syncClassSummary(cls);
         }
@@ -902,7 +931,7 @@ export default function TeacherDashboard() {
       if (knowledge?.className) {
         await syncClassSummary(knowledge.className);
       } else if (knowledge?.block) {
-        const blockClasses = availableClasses.filter(c => c.startsWith(knowledge.block));
+        const blockClasses = teacherClasses.filter(c => c.block === knowledge.block).map(c => c.name);
         for (const cls of blockClasses) {
           await syncClassSummary(cls);
         }
@@ -937,13 +966,13 @@ export default function TeacherDashboard() {
       const classTitlesToSync = new Set<string>();
       if (editingKnowledge.className) classTitlesToSync.add(editingKnowledge.className.trim());
       else {
-         const blockClasses = availableClasses.filter(c => c.startsWith(editingKnowledge.block));
+         const blockClasses = teacherClasses.filter(c => c.block === editingKnowledge.block).map(c => c.name);
          blockClasses.forEach(cls => classTitlesToSync.add(cls));
       }
 
       if (oldKnowledge?.className) classTitlesToSync.add(oldKnowledge.className.trim());
       else if (oldKnowledge?.block) {
-         const blockClasses = availableClasses.filter(c => c.startsWith(oldKnowledge.block));
+         const blockClasses = teacherClasses.filter(c => c.block === oldKnowledge.block).map(c => c.name);
          blockClasses.forEach(cls => classTitlesToSync.add(cls));
       }
 
