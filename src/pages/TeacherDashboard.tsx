@@ -138,8 +138,24 @@ export default function TeacherDashboard() {
         const titleB = b.title || '';
         
         const getChapter = (title: string) => {
-          const match = title.match(/chương\s*(\d+)/i);
-          return match ? parseInt(match[1], 10) : 0;
+          const match = title.match(/chương\s*(\d+|[IVXLCDM]+)/i);
+          if (!match) return 0;
+          const val = match[1].toUpperCase();
+          if (/^\d+$/.test(val)) return parseInt(val, 10);
+          
+          const romanMap: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+          let result = 0;
+          for (let i = 0; i < val.length; i++) {
+              const curr = romanMap[val[i]];
+              const next = romanMap[val[i + 1]];
+              if (next > curr) {
+                  result += next - curr;
+                  i++;
+              } else {
+                  result += curr;
+              }
+          }
+          return result;
         };
       
         const getLesson = (title: string) => {
@@ -1268,7 +1284,7 @@ export default function TeacherDashboard() {
                         <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Thao tác</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-100">
+                    <tbody className="bg-white">
                       {knowledges.length === 0 ? (
                         <tr>
                           <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
@@ -1276,34 +1292,43 @@ export default function TeacherDashboard() {
                           </td>
                         </tr>
                       ) : (
-                        knowledges.map((k) => (
-                          <tr key={k.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                              <a href={k.fileUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 hover:underline">
-                                {k.title}
-                              </a>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              Khối {k.block}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {k.className || <span className="text-gray-400 italic">Tất cả</span>}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right space-x-2">
-                              <button
-                                onClick={() => setEditingKnowledge(k)}
-                                className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors font-medium"
-                              >
-                                Sửa
-                              </button>
-                              <button
-                                onClick={() => setKnowledgeToDelete(k.id)}
-                                className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors font-medium"
-                              >
-                                Xóa
-                              </button>
-                            </td>
-                          </tr>
+                        [...new Set(knowledges.map(k => k.block || '10'))].sort((a,b) => parseInt(a||'0') - parseInt(b||'0')).map(block => (
+                          <React.Fragment key={block}>
+                            <tr className="bg-gray-100/80 border-y border-gray-200">
+                              <td colSpan={4} className="px-6 py-3 text-left text-sm font-black text-indigo-800 uppercase tracking-wider bg-indigo-50/50">
+                                Khối {block}
+                              </td>
+                            </tr>
+                            {knowledges.filter(k => (k.block || '10') === block).map((k) => (
+                              <tr key={k.id} className="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                                  <a href={k.fileUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 hover:underline">
+                                    {k.title}
+                                  </a>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  Khối {k.block || '10'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {k.className || <span className="text-gray-400 italic">Tất cả</span>}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-right space-x-2">
+                                  <button
+                                    onClick={() => setEditingKnowledge(k)}
+                                    className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                                  >
+                                    Sửa
+                                  </button>
+                                  <button
+                                    onClick={() => setKnowledgeToDelete(k.id)}
+                                    className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                                  >
+                                    Xóa
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </React.Fragment>
                         ))
                       )}
                     </tbody>

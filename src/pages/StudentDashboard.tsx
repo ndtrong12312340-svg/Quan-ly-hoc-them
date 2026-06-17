@@ -61,8 +61,24 @@ export default function StudentDashboard() {
         const titleB = b.title || '';
         
         const getChapter = (title: string) => {
-          const match = title.match(/chương\s*(\d+)/i);
-          return match ? parseInt(match[1], 10) : 0;
+          const match = title.match(/chương\s*(\d+|[IVXLCDM]+)/i);
+          if (!match) return 0;
+          const val = match[1].toUpperCase();
+          if (/^\d+$/.test(val)) return parseInt(val, 10);
+          
+          const romanMap: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+          let result = 0;
+          for (let i = 0; i < val.length; i++) {
+              const curr = romanMap[val[i]];
+              const next = romanMap[val[i + 1]];
+              if (next > curr) {
+                  result += next - curr;
+                  i++;
+              } else {
+                  result += curr;
+              }
+          }
+          return result;
         };
       
         const getLesson = (title: string) => {
