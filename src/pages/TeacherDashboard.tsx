@@ -1198,7 +1198,7 @@ export default function TeacherDashboard() {
                           <>
                             <button
                               onClick={() => {
-                                const message = `🚨 BÀI TẬP MỚI 🚨\n\n📌 ${exam.title || 'Bài tập'}\n⏱️ Thời gian: ${exam.duration} phút\n${exam.startTime ? `⏰ Mở: ${new Date(exam.startTime).toLocaleString('vi-VN')}\n` : ''}${exam.endTime ? `⏳ Hạn chót: ${new Date(exam.endTime).toLocaleString('vi-VN')}\n` : ''}\n👉 Các em chú ý đăng nhập vào hệ thống để làm bài đúng hạn nhé!\n🔗 Link: https://thithuthpt-8uqk.vercel.app/`;
+                                const message = `🚨 BÀI TẬP MỚI 🚨\n\n📌 ${exam.title || 'Bài tập'}\n⏱️ Thời gian: ${exam.duration} phút\n${exam.startTime ? `⏰ Mở: ${new Date(exam.startTime).toLocaleString('vi-VN')}\n` : ''}${exam.endTime ? `⏳ Hạn chót: ${new Date(exam.endTime).toLocaleString('vi-VN')}\n` : ''}\n👉 Các em chú ý đăng nhập vào hệ thống để làm bài đúng hạn nhé!\n🔗 Link: ${window.location.origin}`;
                                 navigator.clipboard.writeText(message).catch(err => console.error("Failed to copy message:", err));
                                 window.open('https://chat.zalo.me/', '_blank', 'noopener,noreferrer');
                               }}
@@ -1651,7 +1651,7 @@ export default function TeacherDashboard() {
                     const handleContactClick = (e: React.MouseEvent) => {
                       if (incompleteExams.length > 0) {
                         const listString = incompleteExams.map((ex, idx) => `📌 ${idx + 1}. ${ex.title || 'Bài tập'}`).join('\n');
-                        const message = `🚨 NHẮC NHỞ LÀM BÀI TẬP 🚨\n\nChào ${student.name}, hệ thống ghi nhận em còn các bài tập sau chưa hoàn thành (hoặc giáo viên chưa đồng bộ điểm):\n${listString}\n\n👉 Em vui lòng đăng nhập vào hệ thống để kiểm tra và làm bài nhé!\n🔗 Link: https://thithuthpt-8uqk.vercel.app/`;
+                        const message = `🚨 NHẮC NHỞ LÀM BÀI TẬP 🚨\n\nChào ${student.name}, hệ thống ghi nhận em còn các bài tập sau chưa hoàn thành (hoặc giáo viên chưa đồng bộ điểm):\n${listString}\n\n👉 Em vui lòng đăng nhập vào hệ thống để kiểm tra và làm bài nhé!\n🔗 Link: ${window.location.origin}`;
                         
                         navigator.clipboard.writeText(message).catch(err => {
                           console.error("Failed to copy message:", err);

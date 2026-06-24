@@ -240,7 +240,7 @@ export default function ExamResults() {
       message += `\n`;
     }
 
-    message += `👉 Link đăng nhập: https://thithuthpt-8uqk.vercel.app/`;
+    message += `👉 Link đăng nhập: ${window.location.origin}`;
 
     navigator.clipboard.writeText(message).catch(err => console.error("Failed to copy", err));
     window.open('https://chat.zalo.me/', '_blank', 'noopener,noreferrer');
@@ -364,7 +364,7 @@ export default function ExamResults() {
               const student = students.find(s => s.uid === sub.studentId) || { name: 'Học sinh' };
               
               const handleNotify = () => {
-                const message = `🎉 KẾT QUẢ BÀI THI 🎉\n\nChào ${student.name}, em đã hoàn thành bài thi: "${exam.title || 'Bài tập'}"\n\n🎯 Điểm số: ${sub.score.toFixed(2)} / 10 điểm.\n👉 Hãy tiếp tục cố gắng nhé!\n🔗 Xem lại bài làm: https://thithuthpt-8uqk.vercel.app/`;
+                const message = `🎉 KẾT QUẢ BÀI THI 🎉\n\nChào ${student.name}, em đã hoàn thành bài thi: "${exam.title || 'Bài tập'}"\n\n🎯 Điểm số: ${sub.score.toFixed(2)} / 10 điểm.\n👉 Hãy tiếp tục cố gắng nhé!\n🔗 Xem lại bài làm: ${window.location.origin}`;
                 navigator.clipboard.writeText(message).catch(err => console.error("Failed to copy", err));
                 if (student.zalo) {
                   window.open(`https://chat.zalo.me/?phone=${student.zalo}`, '_blank', 'noopener,noreferrer');
