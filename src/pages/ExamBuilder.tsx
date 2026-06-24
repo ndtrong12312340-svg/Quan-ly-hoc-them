@@ -17,7 +17,8 @@ export default function ExamBuilder() {
   
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState(50);
-  const [assignedClasses, setAssignedClasses] = useState('');
+  const [assignedClasses, setAssignedClasses] = useState<string[]>([]);
+  const [teacherClasses, setTeacherClasses] = useState<any[]>([]);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   
@@ -35,6 +36,16 @@ export default function ExamBuilder() {
   const [editingOptions, setEditingOptions] = useState<string[]>([]);
 
   useEffect(() => {
+    const fetchClasses = async () => {
+      if (appUser?.uid) {
+        const qClasses = query(collection(db, 'classes'), where('teacherId', '==', appUser.uid));
+        const snap = await getDocs(qClasses);
+        const classes = snap.docs.map(doc => doc.data());
+        setTeacherClasses(classes);
+      }
+    };
+    fetchClasses();
+
     if (examId) {
       const fetchExam = async () => {
         try {
@@ -49,7 +60,7 @@ export default function ExamBuilder() {
             }
             setTitle(data.title || '');
             setDuration(data.duration || 50);
-            setAssignedClasses(data.assignedClasses?.join(', ') || '');
+            setAssignedClasses(data.assignedClasses || []);
             setStartTime(data.startTime || '');
             setEndTime(data.endTime || '');
             setQuestions(data.questions || []);
@@ -450,7 +461,7 @@ export default function ExamBuilder() {
       return;
     }
 
-    const classesArray = assignedClasses.split(',').map(c => c.trim()).filter(c => c);
+    const classesArray = assignedClasses;
 
     try {
       if (examId) {
@@ -605,8 +616,30 @@ export default function ExamBuilder() {
               <input type="number" value={duration} onChange={e => setDuration(Number(e.target.value))} className="block w-full border border-gray-300 rounded-xl shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors" />
             </div>
             <div className="sm:col-span-6">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Giao cho các lớp (cách nhau bằng dấu phẩy)</label>
-              <input type="text" value={assignedClasses} onChange={e => setAssignedClasses(e.target.value)} className="block w-full border border-gray-300 rounded-xl shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors" placeholder="VD: 12A1, 12A2" />
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Giao cho các lớp</label>
+              {teacherClasses.length === 0 ? (
+                <div className="text-sm text-gray-500 italic">Bạn chưa tạo lớp nào. Bạn có thể lưu đề thi và giao sau.</div>
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  {teacherClasses.map(c => (
+                    <label key={c.id} className="inline-flex items-center space-x-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-100 transition-colors">
+                      <input 
+                        type="checkbox" 
+                        className="form-checkbox h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" 
+                        checked={assignedClasses.includes(c.name)} 
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setAssignedClasses([...assignedClasses, c.name]);
+                          } else {
+                            setAssignedClasses(assignedClasses.filter(name => name !== c.name));
+                          }
+                        }}
+                      />
+                      <span className="text-sm font-medium text-gray-800">{c.name} (Khối {c.block})</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="sm:col-span-3">
               <label className="block text-sm font-semibold text-gray-700 mb-1">Thời gian bắt đầu (không bắt buộc)</label>

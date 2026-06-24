@@ -95,6 +95,15 @@ export default function TeacherDashboard() {
         const data = summarySnap.data();
         examsList = data.exams || [];
         knowledgesList = data.knowledges || [];
+        
+        // Check if old knowledges are missing fileUrl, repair them
+        const needsRepair = knowledgesList.some((k: any) => k.fileUrl === undefined);
+        if (needsRepair) {
+           const qKnowledges = query(collection(db, 'knowledges'), where('teacherId', '==', appUser.uid));
+           const knowledgeSnap = await getDocs(qKnowledges);
+           knowledgesList = knowledgeSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+           await syncTeacherSummary(appUser.uid);
+        }
       } else {
         // Fallback or first load: fetch everything and create summary
         const qExams = query(collection(db, 'exams'), where('teacherId', '==', appUser.uid));
@@ -1394,7 +1403,21 @@ export default function TeacherDashboard() {
               <div className="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
                 <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center flex-wrap gap-4">
                   <div className="flex items-center space-x-4">
-                    <h3 className="text-lg font-bold text-gray-900">Danh sách học sinh</h3>
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                      Danh sách học sinh
+                      {activeClass && (
+                        <div className="ml-4 flex items-center space-x-2">
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-sm">
+                            Sĩ số: {students.filter(s => s.status === 'active').length}
+                          </span>
+                          {students.filter(s => s.status === 'pending').length > 0 && (
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 shadow-sm animate-pulse">
+                              Chờ duyệt: {students.filter(s => s.status === 'pending').length}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </h3>
                     <select
                       value={activeClass}
                       onChange={(e) => setActiveClass(e.target.value)}

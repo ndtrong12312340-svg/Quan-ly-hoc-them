@@ -39,6 +39,7 @@ export const syncTeacherSummary = async (teacherId: string) => {
         title: data.title || '',
         block: data.block || '',
         className: data.className || '',
+        fileUrl: data.fileUrl || '',
         createdAt: data.createdAt || ''
       };
     });
