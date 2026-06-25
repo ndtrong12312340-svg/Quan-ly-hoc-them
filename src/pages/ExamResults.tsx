@@ -19,6 +19,8 @@ export default function ExamResults() {
   const [viewingDetailsId, setViewingDetailsId] = useState<string | null>(null);
   const [viewingSubmissionDetails, setViewingSubmissionDetails] = useState<any>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
+  const [selectedNotifyClass, setSelectedNotifyClass] = useState<string>('');
 
   const uniqueSubmissions = useMemo(() => {
     const map = new Map();
@@ -210,19 +212,23 @@ export default function ExamResults() {
     setViewingSubmissionDetails(null);
   };
 
-  const handleSendSummaryZalo = () => {
-    const doneStudents = students.filter(student => 
+  const executeSendSummaryZalo = () => {
+    if (!selectedNotifyClass) return;
+
+    const filteredStudents = students.filter(s => s.className === selectedNotifyClass);
+
+    const doneStudents = filteredStudents.filter(student => 
       uniqueSubmissions.some(sub => sub.studentId === student.uid)
     ).map(student => {
       const sub = uniqueSubmissions.find(s => s.studentId === student.uid);
       return { name: student.name, score: sub?.score || 0 };
     }).sort((a, b) => b.score - a.score);
 
-    const notDoneStudents = students.filter(student => 
+    const notDoneStudents = filteredStudents.filter(student => 
       !uniqueSubmissions.some(sub => sub.studentId === student.uid)
     );
 
-    let message = `📊 KẾT QUẢ BÀI THI: ${exam.title || 'Bài tập'} 📊\n\n`;
+    let message = `📊 KẾT QUẢ: ${exam.title || 'Bài tập'} (LỚP ${selectedNotifyClass}) 📊\n\n`;
 
     if (doneStudents.length > 0) {
       message += `✅ ĐÃ LÀM BÀI (${doneStudents.length}):\n`;
@@ -244,6 +250,7 @@ export default function ExamResults() {
 
     navigator.clipboard.writeText(message).catch(err => console.error("Failed to copy", err));
     window.open('https://chat.zalo.me/', '_blank', 'noopener,noreferrer');
+    setShowNotifyModal(false);
   };
 
   const getScoreDistribution = () => {
@@ -281,7 +288,12 @@ export default function ExamResults() {
           </div>
           <div className="flex space-x-3">
             <button
-              onClick={handleSendSummaryZalo}
+              onClick={() => {
+                if (exam.assignedClasses && exam.assignedClasses.length > 0) {
+                  setSelectedNotifyClass(exam.assignedClasses[0]);
+                }
+                setShowNotifyModal(true);
+              }}
               className="flex items-center px-4 py-2 bg-green-50 text-green-600 rounded-xl font-semibold hover:bg-green-100 transition-colors shadow-sm"
               title="Gửi tổng hợp điểm qua Zalo (Copy vào Clipboard & Mở Zalo)"
             >
@@ -582,6 +594,45 @@ export default function ExamResults() {
                 className="px-6 py-2.5 bg-white border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
               >
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Notify Modal */}
+      {showNotifyModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <Send className="w-5 h-5 mr-2 text-indigo-500" />
+              Thông báo nhóm
+            </h3>
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Chọn lớp cần thông báo</label>
+              <select
+                value={selectedNotifyClass}
+                onChange={(e) => setSelectedNotifyClass(e.target.value)}
+                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+              >
+                <option value="">-- Chọn lớp --</option>
+                {exam.assignedClasses && exam.assignedClasses.map((cls: string) => (
+                  <option key={cls} value={cls}>{cls}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowNotifyModal(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={executeSendSummaryZalo}
+                disabled={!selectedNotifyClass}
+                className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50"
+              >
+                Gửi Zalo
               </button>
             </div>
           </div>

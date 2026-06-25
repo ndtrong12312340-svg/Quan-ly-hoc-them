@@ -307,6 +307,11 @@ export default function TeacherDashboard() {
         try {
           // Attempt to recover by signing in if the account exists but Firestore doc was deleted
           const signInCredential = await signInWithEmailAndPassword(secondaryAuth, newStudent.email, newStudent.password);
+          const existingUserSnap = await getDoc(doc(db, 'users', signInCredential.user.uid));
+          let finalCreatedAt = new Date().toISOString();
+          if (existingUserSnap.exists() && existingUserSnap.data().createdAt) {
+              finalCreatedAt = existingUserSnap.data().createdAt;
+          }
           await setDoc(doc(db, 'users', signInCredential.user.uid), {
             uid: signInCredential.user.uid,
             email: newStudent.email,
@@ -314,7 +319,7 @@ export default function TeacherDashboard() {
             className: newStudent.className,
             password: newStudent.password,
             role: 'student',
-            createdAt: new Date().toISOString()
+            createdAt: finalCreatedAt
           });
           await signOut(secondaryAuth);
           if (newStudent.className === activeClass) {
@@ -403,6 +408,11 @@ export default function TeacherDashboard() {
                 try {
                   // Attempt to recover by signing in
                   const signInCredential = await signInWithEmailAndPassword(secondaryAuth, email, String(password));
+                  const existingUserSnap = await getDoc(doc(db, 'users', signInCredential.user.uid));
+                  let finalCreatedAt = new Date().toISOString();
+                  if (existingUserSnap.exists() && existingUserSnap.data().createdAt) {
+                      finalCreatedAt = existingUserSnap.data().createdAt;
+                  }
                   await setDoc(doc(db, 'users', signInCredential.user.uid), {
                     uid: signInCredential.user.uid,
                     email: email,
@@ -412,7 +422,7 @@ export default function TeacherDashboard() {
                     facebook: String(facebook).trim(),
                     zalo: String(zalo).trim(),
                     role: 'student',
-                    createdAt: new Date().toISOString()
+                    createdAt: finalCreatedAt
                   });
                   await signOut(secondaryAuth);
                   successCount++;
@@ -516,11 +526,18 @@ export default function TeacherDashboard() {
       }
 
       // Safe truncate to match Firestore security rules length
-      const safeName = (pendingStudent.name || '').substring(0, 95);
+      const safeName = (pendingStudent.name || 'Học sinh').substring(0, 95);
       const safeClassName = (pendingStudent.className || '').substring(0, 140);
       const safeSchoolInfo = (pendingStudent.schoolInfo || '').substring(0, 140);
 
-      // Create user document in 'users' collection with the same UID
+      // Check if user already exists to preserve createdAt
+      const existingUserSnap = await getDoc(doc(db, 'users', uid));
+      let finalCreatedAt = typeof pendingStudent.createdAt === 'string' ? pendingStudent.createdAt : new Date().toISOString();
+      if (existingUserSnap.exists() && existingUserSnap.data().createdAt) {
+          finalCreatedAt = existingUserSnap.data().createdAt;
+      }
+
+      // Create or update user document in 'users' collection with the same UID
       await setDoc(doc(db, 'users', uid), {
         uid: uid,
         name: safeName,
@@ -539,7 +556,7 @@ export default function TeacherDashboard() {
         parentPhone: pendingStudent.parentPhone || '',
         block: pendingStudent.block || '10',
         password: rawPassword, // Keep password for reference
-        createdAt: pendingStudent.createdAt || new Date().toISOString()
+        createdAt: finalCreatedAt
       });
 
       // Sign out from the secondary app authentication state safely
