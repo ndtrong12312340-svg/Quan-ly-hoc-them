@@ -25,7 +25,8 @@ export const syncTeacherSummary = async (teacherId: string) => {
         assignedClasses: data.assignedClasses || [],
         startTime: data.startTime || '',
         endTime: data.endTime || '',
-        createdAt: data.createdAt || ''
+        createdAt: data.createdAt || '',
+        submissionSummary: data.submissionSummary || []
       };
     });
 

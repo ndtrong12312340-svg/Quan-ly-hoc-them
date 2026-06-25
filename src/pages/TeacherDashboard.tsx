@@ -1549,7 +1549,7 @@ export default function TeacherDashboard() {
                         // Calculate completed exams using submissionSummary
                         const completedExams = assignedExamsList.filter(exam => {
                           if (!exam.submissionSummary) return false;
-                          return exam.submissionSummary.some((s: any) => s.studentId === student.uid);
+                          return exam.submissionSummary.some((s: any) => s.studentId === (student.uid || student.id));
                         }).length;
                         
                         return (
@@ -1697,7 +1697,7 @@ export default function TeacherDashboard() {
                       const isOpened = (!exam.startTime || new Date(exam.startTime) <= now);
                       if (!isOpened) return false;
                       if (!exam.submissionSummary) return true;
-                      return !exam.submissionSummary.some((s: any) => s.studentId === student.uid);
+                      return !exam.submissionSummary.some((s: any) => s.studentId === (student.uid || student.id));
                     });
 
                     const handleContactClick = (e: React.MouseEvent) => {
@@ -2089,7 +2089,7 @@ export default function TeacherDashboard() {
                 return (
                   <div className="space-y-4">
                     {assignedExamsList.map(exam => {
-                      const submission = exam.submissionSummary?.find((s: any) => s.studentId === viewingStudentExams.uid);
+                      const submission = exam.submissionSummary?.find((s: any) => s.studentId === (viewingStudentExams.uid || viewingStudentExams.id));
                       const isCompleted = !!submission;
                       
                       return (
@@ -2122,90 +2122,7 @@ export default function TeacherDashboard() {
                               <button
                                 onClick={() => {
                                   // Navigate to the result page
-                                  window.open(`/teacher/exam/${exam.id}/result/${viewingStudentExams.uid}`, '_blank');
-                                }}
-                                className="px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg font-medium text-sm transition-colors whitespace-nowrap"
-                              >
-                                Xem chi tiết
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Viewing Student Exams Modal */}
-      {viewingStudentExams && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 max-h-[90vh] flex flex-col">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">Bài làm của học sinh</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  <span className="font-semibold text-indigo-600">{viewingStudentExams.name}</span> - Lớp {viewingStudentExams.className}
-                </p>
-              </div>
-              <button onClick={() => setViewingStudentExams(null)} className="text-gray-400 hover:text-gray-500 p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              {(() => {
-                const assignedExamsList = exams.filter(exam => 
-                  exam.status === 'published' && 
-                  exam.assignedClasses && 
-                  exam.assignedClasses.includes(viewingStudentExams.className)
-                );
-
-                if (assignedExamsList.length === 0) {
-                  return <div className="text-center py-8 text-gray-500">Chưa có bài thi nào được giao cho lớp này.</div>;
-                }
-
-                return (
-                  <div className="space-y-4">
-                    {assignedExamsList.map(exam => {
-                      const submission = exam.submissionSummary?.find((s: any) => s.studentId === viewingStudentExams.uid);
-                      const isCompleted = !!submission;
-                      
-                      return (
-                        <div key={exam.id} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div>
-                            <h4 className="font-semibold text-gray-900 text-lg">{exam.title}</h4>
-                            <div className="flex items-center text-sm text-gray-500 mt-1 space-x-4">
-                              <span className="flex items-center"><Clock className="w-3.5 h-3.5 mr-1" /> {exam.duration} phút</span>
-                              {isCompleted ? (
-                                <span className="flex items-center text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-md">
-                                  <CheckCircle className="w-3.5 h-3.5 mr-1" /> Đã nộp bài
-                                </span>
-                              ) : (
-                                <span className="flex items-center text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded-md">
-                                  <AlertCircle className="w-3.5 h-3.5 mr-1" /> Chưa làm
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center justify-between sm:justify-end gap-4 min-w-[140px]">
-                            {isCompleted && (
-                              <div className="text-right">
-                                <div className="text-2xl font-black text-indigo-600 leading-none">{submission.score}</div>
-                                <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mt-1">Điểm số</div>
-                              </div>
-                            )}
-                            
-                            {isCompleted && (
-                              <button
-                                onClick={() => {
-                                  // Navigate to the result page
-                                  window.open(`/teacher/exam/${exam.id}/result/${viewingStudentExams.uid}`, '_blank');
+                                  window.open(`/teacher/exam/${exam.id}/result/${viewingStudentExams.uid || viewingStudentExams.id}`, '_blank');
                                 }}
                                 className="px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg font-medium text-sm transition-colors whitespace-nowrap"
                               >
