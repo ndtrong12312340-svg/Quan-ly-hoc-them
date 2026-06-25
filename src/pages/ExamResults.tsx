@@ -259,7 +259,11 @@ export default function ExamResults() {
     // Find class Zalo link
     const classInfo = classes.find(c => c.name === selectedNotifyClass);
     if (classInfo && classInfo.zaloLink) {
-      window.open(classInfo.zaloLink, '_blank', 'noopener,noreferrer');
+      let webLink = classInfo.zaloLink;
+      if (webLink.includes('zalo.me/g/')) {
+        webLink = webLink.replace('zalo.me/g/', 'chat.zalo.me/?g=');
+      }
+      window.open(webLink, '_blank', 'noopener,noreferrer');
     } else {
       window.open('https://chat.zalo.me/', '_blank', 'noopener,noreferrer');
     }

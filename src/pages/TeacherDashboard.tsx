@@ -1840,7 +1840,7 @@ export default function TeacherDashboard() {
                               Khối {cls.block}
                             </span>
                             {cls.zaloLink && (
-                              <a href={cls.zaloLink} target="_blank" rel="noopener noreferrer" className="inline-flex w-fit items-center text-xs text-blue-600 hover:text-blue-800 transition-colors">
+                              <a href={cls.zaloLink.includes('zalo.me/g/') ? cls.zaloLink.replace('zalo.me/g/', 'chat.zalo.me/?g=') : cls.zaloLink} target="_blank" rel="noopener noreferrer" className="inline-flex w-fit items-center text-xs text-blue-600 hover:text-blue-800 transition-colors">
                                 <MessageCircle className="w-3.5 h-3.5 mr-1" />
                                 Zalo Nhóm
                               </a>
