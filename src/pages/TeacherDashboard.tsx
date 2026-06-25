@@ -20,9 +20,12 @@ export default function TeacherDashboard() {
   
   // Classes state
   const [teacherClasses, setTeacherClasses] = useState<any[]>([]);
-  const [newClass, setNewClass] = useState({ name: '', block: '10' });
+  const [newClass, setNewClass] = useState({ name: '', block: '10', zaloLink: '' });
   const [isCreatingClass, setIsCreatingClass] = useState(false);
   const [classToDelete, setClassToDelete] = useState<string | null>(null);
+  const [editingClass, setEditingClass] = useState<any>(null);
+  const [editClassData, setEditClassData] = useState({ name: '', block: '10', zaloLink: '' });
+  const [isUpdatingClass, setIsUpdatingClass] = useState(false);
 
   // Exams state
   const [exams, setExams] = useState<any[]>([]);
@@ -866,6 +869,7 @@ export default function TeacherDashboard() {
       const docRef = await addDoc(collection(db, 'classes'), {
         name: newClass.name.trim(),
         block: newClass.block,
+        zaloLink: newClass.zaloLink.trim(),
         teacherId: appUser.uid,
         createdAt: new Date().toISOString()
       });
@@ -874,6 +878,7 @@ export default function TeacherDashboard() {
         id: docRef.id,
         name: newClass.name.trim(),
         block: newClass.block,
+        zaloLink: newClass.zaloLink.trim(),
         teacherId: appUser.uid,
         createdAt: new Date().toISOString()
       };
@@ -890,13 +895,43 @@ export default function TeacherDashboard() {
         setAvailableClasses(newAvailable);
       }
       
-      setNewClass({ name: '', block: '10' });
+      setNewClass({ name: '', block: '10', zaloLink: '' });
       alert('Tạo lớp thành công!');
     } catch (error) {
       console.error(error);
       alert('Lỗi tạo lớp.');
     } finally {
       setIsCreatingClass(false);
+    }
+  };
+
+  const handleUpdateClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingClass) return;
+    setIsUpdatingClass(true);
+    try {
+      await updateDoc(doc(db, 'classes', editingClass.id), {
+        name: editClassData.name.trim(),
+        block: editClassData.block,
+        zaloLink: editClassData.zaloLink.trim()
+      });
+      
+      const updatedList = teacherClasses.map(c => 
+        c.id === editingClass.id 
+          ? { ...c, name: editClassData.name.trim(), block: editClassData.block, zaloLink: editClassData.zaloLink.trim() } 
+          : c
+      );
+      updatedList.sort((a: any, b: any) => {
+        if (a.block !== b.block) return a.block.localeCompare(b.block);
+        return a.name.localeCompare(b.name);
+      });
+      setTeacherClasses(updatedList);
+      setEditingClass(null);
+    } catch (error) {
+      console.error(error);
+      alert('Lỗi khi cập nhật lớp');
+    } finally {
+      setIsUpdatingClass(false);
     }
   };
 
@@ -1769,6 +1804,10 @@ export default function TeacherDashboard() {
                     <label className="block text-sm font-semibold text-gray-700 mb-1">Tên lớp</label>
                     <input type="text" required value={newClass.name} onChange={e => setNewClass({...newClass, name: e.target.value})} placeholder="Vd: 10A1" className="block w-full border border-gray-300 rounded-xl shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors" />
                   </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Link Zalo nhóm (không bắt buộc)</label>
+                    <input type="url" value={newClass.zaloLink} onChange={e => setNewClass({...newClass, zaloLink: e.target.value})} placeholder="https://zalo.me/g/..." className="block w-full border border-gray-300 rounded-xl shadow-sm py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors" />
+                  </div>
                   <button type="submit" disabled={isCreatingClass} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all transform hover:-translate-y-0.5">
                     {isCreatingClass ? 'Đang thêm...' : 'Tạo lớp'}
                   </button>
@@ -1796,11 +1835,29 @@ export default function TeacherDashboard() {
                       <div key={cls.id} className="p-6 hover:bg-gray-50 transition-colors duration-150 flex justify-between items-start group">
                         <div>
                           <h4 className="text-lg font-bold text-gray-900 mb-1">{cls.name}</h4>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
-                            Khối {cls.block}
-                          </span>
+                          <div className="flex flex-col space-y-2 mt-2">
+                            <span className="inline-flex w-fit items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              Khối {cls.block}
+                            </span>
+                            {cls.zaloLink && (
+                              <a href={cls.zaloLink} target="_blank" rel="noopener noreferrer" className="inline-flex w-fit items-center text-xs text-blue-600 hover:text-blue-800 transition-colors">
+                                <MessageCircle className="w-3.5 h-3.5 mr-1" />
+                                Zalo Nhóm
+                              </a>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => {
+                              setEditingClass(cls);
+                              setEditClassData({ name: cls.name, block: cls.block, zaloLink: cls.zaloLink || '' });
+                            }}
+                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                            title="Chỉnh sửa lớp"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </button>
                           <button
                             onClick={() => setClassToDelete(cls.id)}
                             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
@@ -1815,6 +1872,71 @@ export default function TeacherDashboard() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Class Modal */}
+      {editingClass && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setEditingClass(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <h3 className="text-xl font-bold text-gray-900 mb-6">Chỉnh sửa Lớp</h3>
+            <form onSubmit={handleUpdateClass} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Khối</label>
+                <select 
+                  value={editClassData.block} 
+                  onChange={e => setEditClassData({...editClassData, block: e.target.value})} 
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+                >
+                  <option value="10">Khối 10</option>
+                  <option value="11">Khối 11</option>
+                  <option value="12">Khối 12</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Tên lớp</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={editClassData.name} 
+                  onChange={e => setEditClassData({...editClassData, name: e.target.value})} 
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Link Zalo nhóm (không bắt buộc)</label>
+                <input 
+                  type="url" 
+                  value={editClassData.zaloLink} 
+                  onChange={e => setEditClassData({...editClassData, zaloLink: e.target.value})} 
+                  placeholder="https://zalo.me/g/..."
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition" 
+                />
+              </div>
+              <div className="flex justify-end space-x-3 mt-8">
+                <button
+                  type="button"
+                  onClick={() => setEditingClass(null)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingClass}
+                  className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 shadow-sm"
+                >
+                  {isUpdatingClass ? 'Đang lưu...' : 'Lưu thay đổi'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

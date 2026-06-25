@@ -13,6 +13,7 @@ export default function ExamResults() {
   const [exam, setExam] = useState<any>(null);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
   const [submissionToDelete, setSubmissionToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [regradingId, setRegradingId] = useState<string | null>(null);
@@ -75,6 +76,11 @@ export default function ExamResults() {
       const studentSnap = await getDocs(qStudents);
       const studs = studentSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setStudents(studs);
+
+      const qClasses = query(collection(db, 'classes'));
+      const classesSnap = await getDocs(qClasses);
+      const classesList = classesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setClasses(classesList);
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, 'exam_results_data');
     } finally {
@@ -249,7 +255,15 @@ export default function ExamResults() {
     message += `👉 Link đăng nhập: ${window.location.origin}`;
 
     navigator.clipboard.writeText(message).catch(err => console.error("Failed to copy", err));
-    window.open('https://chat.zalo.me/', '_blank', 'noopener,noreferrer');
+    
+    // Find class Zalo link
+    const classInfo = classes.find(c => c.name === selectedNotifyClass);
+    if (classInfo && classInfo.zaloLink) {
+      window.open(classInfo.zaloLink, '_blank', 'noopener,noreferrer');
+    } else {
+      window.open('https://chat.zalo.me/', '_blank', 'noopener,noreferrer');
+    }
+    
     setShowNotifyModal(false);
   };
 
