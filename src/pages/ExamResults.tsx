@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType, syncTeacherSummary } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, getDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { ArrowLeft, Users, CheckCircle, XCircle, Trash2, AlertCircle, BarChart3, Loader2, RefreshCw, Eye, Send } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 import MathText from '../components/MathText';
+import { syncClassSummary } from '../lib/syncUtils';
 
 export default function ExamResults() {
   const { examId } = useParams<{ examId: string }>();
@@ -113,6 +114,13 @@ export default function ExamResults() {
         });
         setExam({ ...exam, submissionSummary: updatedSummary });
         setSubmissions(submissions.filter(s => s.id !== submissionToDelete));
+        
+        await syncTeacherSummary(appUser?.uid || exam.teacherId);
+        if (exam.assignedClasses) {
+          for (const cls of exam.assignedClasses) {
+             await syncClassSummary(cls);
+          }
+        }
       }
       
       setSubmissionToDelete(null);
@@ -192,6 +200,13 @@ export default function ExamResults() {
       // Update local state
       setExam({ ...exam, submissionSummary: updatedSummary });
       setSubmissions(submissions.map(s => s.id === submission.id ? { ...s, score } : s));
+
+      await syncTeacherSummary(appUser?.uid || exam.teacherId);
+      if (exam.assignedClasses) {
+        for (const cls of exam.assignedClasses) {
+           await syncClassSummary(cls);
+        }
+      }
 
       alert('Đã chấm lại thành công!');
     } catch (error) {

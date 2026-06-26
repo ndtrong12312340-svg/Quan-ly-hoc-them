@@ -206,7 +206,7 @@ export default function TeacherDashboard() {
       });
       setTeacherClasses(classesList);
       
-      classesList.forEach(cls => classes.add(cls.name));
+      classesList.forEach(cls => classes.add((cls as any).name));
       const classesArray = Array.from(classes).sort();
       setAvailableClasses(classesArray);
       
@@ -831,6 +831,7 @@ export default function TeacherDashboard() {
 
       // 5. Update local state
       setExams(exams.map(e => e.id === examId ? { ...e, submissionSummary: summary } : e));
+      await syncTeacherSummary(appUser.uid);
       alert('Đồng bộ dữ liệu cũ thành công!');
     } catch (error) {
       console.error("Error syncing old data:", error);
@@ -1353,7 +1354,7 @@ export default function TeacherDashboard() {
                           </td>
                         </tr>
                       ) : (
-                        [...new Set(knowledges.map(k => k.block || '10'))].sort((a,b) => parseInt(a||'0') - parseInt(b||'0')).map(block => (
+                        [...new Set(knowledges.map(k => k.block || '10'))].sort((a,b) => parseInt(a as string ||'0') - parseInt(b as string ||'0')).map((block: any) => (
                           <React.Fragment key={block}>
                             <tr className="bg-gray-100/80 border-y border-gray-200">
                               <td colSpan={4} className="px-6 py-3 text-left text-sm font-black text-indigo-800 uppercase tracking-wider bg-indigo-50/50">

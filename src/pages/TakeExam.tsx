@@ -5,6 +5,8 @@ import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { doc, getDoc, addDoc, collection, updateDoc, arrayUnion } from 'firebase/firestore';
 import MathText from '../components/MathText';
 import { Clock, AlertCircle, ChevronLeft, CheckCircle, BookOpen } from 'lucide-react';
+import { syncTeacherSummary } from '../lib/firebase';
+import { syncClassSummary } from '../lib/syncUtils';
 
 export default function TakeExam() {
   const { examId } = useParams<{ examId: string }>();
@@ -167,6 +169,14 @@ export default function TakeExam() {
           submittedAt: submissionData.submittedAt
         })
       });
+
+      // Synchronize the teacher and class summaries so the teacher sees the correct count immediately
+      if (exam.teacherId) {
+        await syncTeacherSummary(exam.teacherId);
+      }
+      if (appUser.className) {
+        await syncClassSummary(appUser.className);
+      }
 
       setSubmittedResult({ score, incorrectQuestions });
     } catch (error) {
