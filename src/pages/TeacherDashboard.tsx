@@ -1068,82 +1068,82 @@ export default function TeacherDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 relative overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-72 bg-[#0A1128] border-r border-[#1a2238] flex flex-col fixed inset-y-0 left-0 z-50">
-        <div className="p-6 pb-2">
-          <div className="flex items-center space-x-3 mb-8">
-            <div className="w-10 h-10 rounded-[1rem] bg-indigo-600 flex flex-col items-center justify-center text-white shadow-lg shadow-indigo-500/30">
-              <BookOpen className="w-6 h-6" strokeWidth={1.5} />
+    <div className="flex flex-col md:flex-row min-h-screen bg-slate-50 relative overflow-hidden">
+      {/* Sidebar / Topbar */}
+      <aside className="w-full md:w-72 bg-[#0A1128] border-b md:border-b-0 md:border-r border-[#1a2238] flex md:flex-col fixed top-0 left-0 z-50 md:inset-y-0 h-auto md:h-full items-center md:items-stretch">
+        <div className="flex-1 flex md:flex-col overflow-x-auto overflow-y-hidden md:overflow-visible p-3 md:p-6 md:pb-2 scrollbar-hide items-center md:items-stretch">
+          <div className="flex items-center space-x-3 md:mb-8 shrink-0 mr-6 md:mr-0">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-[1rem] bg-indigo-600 flex flex-col items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+              <BookOpen className="w-5 h-5 md:w-6 md:h-6" strokeWidth={1.5} />
             </div>
-            <span className="text-2xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>TỔNG QUAN</span>
+            <span className="text-xl md:text-2xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>TỔNG QUAN</span>
           </div>
 
-          <h3 className="px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
+          <h3 className="hidden md:block px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
             MENU GIÁO VIÊN
           </h3>
           
-          <nav className="space-y-1">
+          <nav className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-1 shrink-0">
             <button
               onClick={() => setActiveTab('exams')}
-              className={`w-full flex items-center px-4 py-3.5 rounded-2xl transition-all duration-200 ${
+              className={`flex items-center px-4 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl transition-all duration-200 whitespace-nowrap ${
                 activeTab === 'exams'
                   ? 'bg-indigo-600/10 text-indigo-400 font-bold'
                   : 'text-slate-400 hover:bg-white/5 hover:text-slate-200 font-medium'
               }`}
             >
-              <FileText className="w-5 h-5 mr-3" strokeWidth={activeTab === 'exams' ? 2.5 : 1.5} />
+              <FileText className="w-5 h-5 mr-2 md:mr-3" strokeWidth={activeTab === 'exams' ? 2.5 : 1.5} />
               Quản lí Đề thi
             </button>
             <button
               onClick={() => setActiveTab('knowledge')}
-              className={`w-full flex items-center px-4 py-3.5 rounded-2xl transition-all duration-200 ${
+              className={`flex items-center px-4 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl transition-all duration-200 whitespace-nowrap ${
                 activeTab === 'knowledge'
                   ? 'bg-indigo-600/10 text-indigo-400 font-bold'
                   : 'text-slate-400 hover:bg-white/5 hover:text-slate-200 font-medium'
               }`}
             >
-              <BookOpen className="w-5 h-5 mr-3" strokeWidth={activeTab === 'knowledge' ? 2.5 : 1.5} />
+              <BookOpen className="w-5 h-5 mr-2 md:mr-3" strokeWidth={activeTab === 'knowledge' ? 2.5 : 1.5} />
               Hệ thống kiến thức
             </button>
             <button
               onClick={() => setActiveTab('students')}
-              className={`w-full flex items-center px-4 py-3.5 rounded-2xl transition-all duration-200 ${
+              className={`flex items-center px-4 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl transition-all duration-200 whitespace-nowrap ${
                 activeTab === 'students'
                   ? 'bg-indigo-600/10 text-indigo-400 font-bold'
                   : 'text-slate-400 hover:bg-white/5 hover:text-slate-200 font-medium'
               }`}
             >
-              <Users className="w-5 h-5 mr-3" strokeWidth={activeTab === 'students' ? 2.5 : 1.5} />
+              <Users className="w-5 h-5 mr-2 md:mr-3" strokeWidth={activeTab === 'students' ? 2.5 : 1.5} />
               Học sinh
             </button>
             <button
               onClick={() => setActiveTab('classes')}
-              className={`w-full flex items-center px-4 py-3.5 rounded-2xl transition-all duration-200 ${
+              className={`flex items-center px-4 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl transition-all duration-200 whitespace-nowrap ${
                 activeTab === 'classes'
                   ? 'bg-indigo-600/10 text-indigo-400 font-bold'
                   : 'text-slate-400 hover:bg-white/5 hover:text-slate-200 font-medium'
               }`}
             >
-              <FileText className="w-5 h-5 mr-3" strokeWidth={activeTab === 'classes' ? 2.5 : 1.5} />
+              <FileText className="w-5 h-5 mr-2 md:mr-3" strokeWidth={activeTab === 'classes' ? 2.5 : 1.5} />
               Quản lý Lớp
             </button>
             <button
               onClick={() => setActiveTab('facebook')}
-              className={`w-full flex items-center px-4 py-3.5 rounded-2xl transition-all duration-200 ${
+              className={`flex items-center px-4 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl transition-all duration-200 whitespace-nowrap ${
                 activeTab === 'facebook'
                   ? 'bg-indigo-600/10 text-indigo-400 font-bold'
                   : 'text-slate-400 hover:bg-white/5 hover:text-slate-200 font-medium'
               }`}
             >
-              <MessageCircle className="w-5 h-5 mr-3" strokeWidth={activeTab === 'facebook' ? 2.5 : 1.5} />
-              Liên hệ (Facebook)
+              <MessageCircle className="w-5 h-5 mr-2 md:mr-3" strokeWidth={activeTab === 'facebook' ? 2.5 : 1.5} />
+              Liên hệ
             </button>
           </nav>
         </div>
 
-        <div className="mt-auto p-4 m-4 bg-[#111827] border border-[#1f2937] rounded-3xl">
-          <div className="flex items-center space-x-3 mb-4 px-2">
+        <div className="shrink-0 p-3 md:mt-auto md:p-4 md:m-4 md:bg-[#111827] md:border md:border-[#1f2937] md:rounded-3xl flex md:block items-center">
+          <div className="hidden md:flex items-center space-x-3 mb-4 px-2">
             <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center font-bold text-slate-300">
               {appUser?.name?.[0]?.toUpperCase()}
             </div>
@@ -1152,18 +1152,18 @@ export default function TeacherDashboard() {
               <p className="text-xs text-slate-400 truncate">Giáo viên</p>
             </div>
           </div>
-          <button onClick={logout} className="w-full flex items-center px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-2xl transition-colors font-semibold">
-            <LogOut className="w-4 h-4 mr-3" />
-            Đăng xuất
+          <button onClick={logout} className="md:w-full flex items-center px-3 md:px-4 py-2 md:py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-xl md:rounded-2xl transition-colors font-semibold" title="Đăng xuất">
+            <LogOut className="w-5 h-5 md:w-4 md:h-4 md:mr-3" />
+            <span className="hidden md:inline">Đăng xuất</span>
           </button>
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 ml-72">
-        <div className="max-w-6xl mx-auto px-8 py-8">
-          <div className="flex justify-between items-center mb-8 pb-6 border-b border-slate-200">
-            <h2 className="text-2xl font-bold text-slate-800">
+      <main className="flex-1 mt-[72px] md:mt-0 md:ml-72">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-6 md:py-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 md:mb-8 pb-4 md:pb-6 border-b border-slate-200">
+            <h2 className="text-xl md:text-2xl font-bold text-slate-800">
               {activeTab === 'exams' && 'Quản lí Đề thi'}
               {activeTab === 'knowledge' && 'Hệ thống kiến thức'}
               {activeTab === 'students' && 'Quản lý Học sinh & Lớp học'}
