@@ -39,11 +39,19 @@ export default function Login() {
     }
   }, [showRegisterModal]);
 
+  const isZalo = /Zalo/i.test(navigator.userAgent);
+  const isFB = /FBAN|FBAV/i.test(navigator.userAgent);
+  const isInAppBrowser = isZalo || isFB;
+
   if (user && appUser) {
     return <Navigate to="/" />;
   }
 
   const handleTeacherLogin = async () => {
+    if (isInAppBrowser) {
+      setError('Đăng nhập Google không được hỗ trợ trong trình duyệt của Zalo/Facebook. Vui lòng mở ứng dụng bằng Google Chrome, Safari hoặc trình duyệt mặc định của máy.');
+      return;
+    }
     try {
       setError('');
       await loginWithGoogle();
@@ -235,6 +243,11 @@ export default function Login() {
               </svg>
               <span className="text-base font-bold text-slate-700">Đăng nhập tài khoản Google</span>
             </button>
+            {isInAppBrowser && (
+              <p className="mt-3 text-xs text-amber-600 font-medium text-center bg-amber-50 p-2 rounded-lg border border-amber-100">
+                ⚠️ Trình duyệt Zalo/Facebook không hỗ trợ đăng nhập Google. Vui lòng mở bằng Chrome hoặc Safari (dấu 3 chấm góc phải &gt; Mở bằng trình duyệt).
+              </p>
+            )}
           </div>
 
           <div className="relative my-8">
