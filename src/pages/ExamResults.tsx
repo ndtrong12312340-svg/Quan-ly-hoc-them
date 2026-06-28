@@ -26,23 +26,21 @@ export default function ExamResults() {
 
   const uniqueSubmissions = useMemo(() => {
     const map = new Map();
-    console.log('Calculating unique submissions from:', submissions);
     submissions.forEach(sub => {
-      // Use studentId as key. If a student submits multiple times, we only want the latest.
-      // Is it possible studentId is not unique because of some data issue?
-      if (!map.has(sub.studentId)) {
-        map.set(sub.studentId, sub);
+      // Use studentId or studentName as key to handle older data without studentId.
+      const key = sub.studentId || sub.studentName || sub.id;
+      if (!map.has(key)) {
+        map.set(key, sub);
       } else {
-        const existing = map.get(sub.studentId);
+        const existing = map.get(key);
         const subDate = new Date(sub.submittedAt).getTime();
         const existingDate = new Date(existing.submittedAt).getTime();
         if (subDate > existingDate) {
-          map.set(sub.studentId, sub);
+          map.set(key, sub);
         }
       }
     });
     const result = Array.from(map.values()).sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
-    console.log('Unique submissions result:', result);
     return result;
   }, [submissions]);
 
@@ -64,6 +62,7 @@ export default function ExamResults() {
         const subs = examData.submissionSummary.map((s: any) => ({
           id: s.submissionId,
           studentId: s.studentId,
+          studentName: s.studentName,
           score: s.score,
           incorrectQuestions: s.incorrectQuestions || [],
           submittedAt: s.submittedAt

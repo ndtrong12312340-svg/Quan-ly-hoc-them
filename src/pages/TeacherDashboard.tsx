@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { db, handleFirestoreError, OperationType, syncTeacherSummary } from '../lib/firebase';
-import { collection, query, where, getDocs, addDoc, doc, getDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, doc, getDoc, setDoc, deleteDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateEmail, updatePassword, deleteUser } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { Link } from 'react-router-dom';
-import { Plus, Users, FileText, LogOut, Edit, Trash2, Upload, X, AlertTriangle, Clock, MessageCircle, RefreshCw, AlertCircle, CheckCircle, BookOpen } from 'lucide-react';
+import { Plus, Users, FileText, LogOut, Edit, Trash2, Upload, X, AlertTriangle, Clock, MessageCircle, RefreshCw, AlertCircle, CheckCircle, BookOpen, Trophy, Medal, Award, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { syncClassSummary } from '../lib/syncUtils';
 
@@ -58,6 +58,9 @@ export default function TeacherDashboard() {
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [examToDelete, setExamToDelete] = useState<string | null>(null);
   const [examToExtend, setExamToExtend] = useState<any>(null);
+  const [rankingExam, setRankingExam] = useState<any>(null);
+  const [rankingData, setRankingData] = useState<any[]>([]);
+  const [isLoadingRanking, setIsLoadingRanking] = useState(false);
   const [newEndTime, setNewEndTime] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [acceptingStudentId, setAcceptingStudentId] = useState<string | null>(null);
@@ -66,6 +69,85 @@ export default function TeacherDashboard() {
   const [activeClass, setActiveClass] = useState<string>('');
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
   const [isFetchingStudents, setIsFetchingStudents] = useState(false);
+
+  useEffect(() => {
+    if (!rankingExam) {
+      setRankingData([]);
+      return;
+    }
+
+    const fetchRankingData = async () => {
+      setIsLoadingRanking(true);
+      try {
+        if (!rankingExam.submissionSummary || rankingExam.submissionSummary.length === 0) {
+          setRankingData([]);
+          return;
+        }
+
+        const map = new Map();
+        rankingExam.submissionSummary.forEach((sub: any) => {
+          const key = sub.studentId || sub.studentName || sub.submissionId;
+          if (!map.has(key)) {
+            map.set(key, sub);
+          } else {
+            const existing = map.get(key);
+            const subScore = parseFloat(sub.score || '0');
+            const existingScore = parseFloat(existing.score || '0');
+            if (subScore > existingScore) {
+              map.set(key, sub);
+            } else if (subScore === existingScore) {
+              const subDate = new Date(sub.submittedAt).getTime();
+              const existingDate = new Date(existing.submittedAt).getTime();
+              if (subDate < existingDate) {
+                map.set(key, sub);
+              }
+            }
+          }
+        });
+
+        const topStudents = Array.from(map.values()).sort((a: any, b: any) => {
+          const scoreA = parseFloat(a.score || '0');
+          const scoreB = parseFloat(b.score || '0');
+          if (scoreB !== scoreA) return scoreB - scoreA;
+          return new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime();
+        }).slice(0, 5);
+
+        // Fetch names if missing or generic
+        const processedStudents = await Promise.all(topStudents.map(async (sub) => {
+          let studentName = sub.studentName;
+          
+          if ((!studentName || studentName === 'Học sinh' || studentName === 'Học sinh ẩn danh') && sub.studentId) {
+            // Check local students array first
+            const foundLocal = students.find((s: any) => s.uid === sub.studentId || s.id === sub.studentId);
+            if (foundLocal && foundLocal.name) {
+              studentName = foundLocal.name;
+            } else {
+               // Fetch from DB
+               try {
+                 const userDoc = await getDoc(doc(db, 'users', sub.studentId));
+                 if (userDoc.exists() && userDoc.data().name) {
+                   studentName = userDoc.data().name;
+                 }
+               } catch(e) {
+                 console.log("Error fetching student name", e);
+               }
+            }
+          }
+          if (!studentName) studentName = 'Học sinh ẩn danh';
+          
+          return { ...sub, studentName };
+        }));
+
+        setRankingData(processedStudents);
+      } catch (e) {
+        console.error("Error processing ranking:", e);
+      } finally {
+        setIsLoadingRanking(false);
+      }
+    };
+
+    fetchRankingData();
+  }, [rankingExam, students]);
 
   const [isSyncingClass, setIsSyncingClass] = useState(false);
 
@@ -88,6 +170,9 @@ export default function TeacherDashboard() {
     setIsRefreshing(true);
     setError(null);
     try {
+      // Force sync on refresh to ensure data is always completely accurate
+      await syncTeacherSummary(appUser.uid);
+      
       const summaryRef = doc(db, 'teacher_summaries', appUser.uid);
       const summarySnap = await getDoc(summaryRef);
       
@@ -98,17 +183,8 @@ export default function TeacherDashboard() {
         const data = summarySnap.data();
         examsList = data.exams || [];
         knowledgesList = data.knowledges || [];
-        
-        // Check if old knowledges are missing fileUrl, repair them
-        const needsRepair = knowledgesList.some((k: any) => k.fileUrl === undefined);
-        if (needsRepair) {
-           const qKnowledges = query(collection(db, 'knowledges'), where('teacherId', '==', appUser.uid));
-           const knowledgeSnap = await getDocs(qKnowledges);
-           knowledgesList = knowledgeSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-           await syncTeacherSummary(appUser.uid);
-        }
       } else {
-        // Fallback or first load: fetch everything and create summary
+        // Fallback: fetch everything directly if summary somehow failed
         const qExams = query(collection(db, 'exams'), where('teacherId', '==', appUser.uid));
         const examSnap = await getDocs(qExams);
         examsList = examSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -116,8 +192,6 @@ export default function TeacherDashboard() {
         const qKnowledges = query(collection(db, 'knowledges'), where('teacherId', '==', appUser.uid));
         const knowledgeSnap = await getDocs(qKnowledges);
         knowledgesList = knowledgeSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        await syncTeacherSummary(appUser.uid);
       }
       
       // Sort exams by number in title
@@ -236,6 +310,65 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     fetchData();
+    
+    if (appUser?.uid) {
+      const summaryRef = doc(db, 'teacher_summaries', appUser.uid);
+      const unsubscribe = onSnapshot(summaryRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          let examsList = data.exams || [];
+          let knowledgesList = data.knowledges || [];
+          
+          examsList.sort((a: any, b: any) => {
+            const titleA = a.title || '';
+            const titleB = b.title || '';
+            const matchA = titleA.match(/\d+/);
+            const matchB = titleB.match(/\d+/);
+            if (matchA && matchB) {
+              const numA = parseInt(matchA[0], 10);
+              const numB = parseInt(matchB[0], 10);
+              if (numA !== numB) return numA - numB;
+            }
+            return titleA.localeCompare(titleB);
+          });
+          
+          knowledgesList.sort((a: any, b: any) => {
+            const blockA = parseInt(a.block || '0', 10);
+            const blockB = parseInt(b.block || '0', 10);
+            if (blockA !== blockB) return blockA - blockB;
+            const titleA = a.title || '';
+            const titleB = b.title || '';
+            const getChapter = (title: string) => {
+              const match = title.match(/chương\s*(\d+|[IVXLCDM]+)/i);
+              if (!match) return 0;
+              const val = match[1].toUpperCase();
+              if (/^\d+$/.test(val)) return parseInt(val, 10);
+              const romanMap: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+              let result = 0;
+              for (let i = 0; i < val.length; i++) {
+                const current = romanMap[val[i]];
+                const next = romanMap[val[i + 1]];
+                if (next && current < next) {
+                  result += next - current;
+                  i++;
+                } else {
+                  result += current;
+                }
+              }
+              return result;
+            };
+            const chapterA = getChapter(titleA);
+            const chapterB = getChapter(titleB);
+            if (chapterA !== chapterB) return chapterA - chapterB;
+            return titleA.localeCompare(titleB, 'vi', { numeric: true, sensitivity: 'base' });
+          });
+          
+          setExams(examsList);
+          setKnowledges(knowledgesList);
+        }
+      });
+      return () => unsubscribe();
+    }
   }, [appUser?.uid]);
 
   const fetchStudentsForClass = async (className: string) => {
@@ -1225,7 +1358,7 @@ export default function TeacherDashboard() {
                           <div className="mt-1 flex items-center space-x-3">
                             <p className="text-sm font-semibold text-indigo-600">
                               Đã nộp: {exam.submissionSummary ? (() => {
-                                const uniqueStudents = new Set(exam.submissionSummary.map((s: any) => s.studentId));
+                                const uniqueStudents = new Set(exam.submissionSummary.map((s: any) => s.studentId || s.studentName || s.submissionId));
                                 return uniqueStudents.size;
                               })() : 0} học sinh
                             </p>
@@ -1272,6 +1405,13 @@ export default function TeacherDashboard() {
                             <Link to={`/teacher/exam/${exam.id}/results`} className="px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg font-medium text-sm transition-colors">
                               Xem kết quả
                             </Link>
+                            <button
+                              onClick={() => setRankingExam(exam)}
+                              className="px-3 py-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-lg font-medium text-sm transition-colors flex items-center"
+                              title="Xếp hạng 5 học sinh điểm cao nhất"
+                            >
+                              <Trophy className="w-4 h-4 mr-1.5" /> Xếp hạng
+                            </button>
                           </>
                         )}
                         <Link to={`/teacher/exam/${exam.id}/edit`} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Chỉnh sửa">
@@ -2375,6 +2515,109 @@ export default function TeacherDashboard() {
               </button>
               <button onClick={handleDeleteClass} className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 flex items-center">
                 Xóa lớp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ranking Modal */}
+      {rankingExam && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl transform transition-all">
+            <div className="bg-gradient-to-r from-amber-400 to-orange-500 p-6 flex justify-between items-center text-white relative overflow-hidden shrink-0">
+              <div className="absolute top-0 right-0 -mr-8 -mt-8 opacity-20 transform rotate-12">
+                <Trophy className="w-32 h-32" />
+              </div>
+              <div className="relative z-10">
+                <h3 className="text-2xl font-extrabold flex items-center drop-shadow-md">
+                  <Medal className="w-7 h-7 mr-2" /> Bảng Vàng Thành Tích
+                </h3>
+                <p className="text-amber-50 mt-1 text-sm font-medium opacity-90 truncate max-w-xs">{rankingExam.title}</p>
+              </div>
+              <button onClick={() => setRankingExam(null)} className="relative z-10 text-white/80 hover:text-white bg-black/10 hover:bg-black/20 p-2 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 bg-slate-50 relative overflow-y-auto flex-1">
+              {(() => {
+                if (isLoadingRanking) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-10">
+                      <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
+                      <p className="text-slate-500 font-medium">Đang tải bảng xếp hạng...</p>
+                    </div>
+                  );
+                }
+
+                if (!rankingData || rankingData.length === 0) {
+                  return (
+                    <div className="text-center py-10 flex flex-col items-center">
+                      <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                        <Trophy className="w-10 h-10 text-slate-300" />
+                      </div>
+                      <p className="text-slate-500 font-medium text-lg">Chưa có kết quả hoặc học sinh nào nộp bài.</p>
+                      <p className="text-slate-400 text-sm mt-1">Bảng xếp hạng sẽ hiển thị khi có kết quả đầu tiên.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3 relative z-10">
+                    {rankingData.map((student: any, index: number) => {
+                      const rankColors = [
+                        'bg-gradient-to-r from-yellow-300 to-yellow-500 text-yellow-900 border-yellow-400 shadow-yellow-200/50',
+                        'bg-gradient-to-r from-slate-300 to-slate-400 text-slate-800 border-slate-300 shadow-slate-300/50',
+                        'bg-gradient-to-r from-amber-500 to-amber-700 text-amber-50 border-amber-600 shadow-amber-600/30',
+                        'bg-white border-slate-200 text-slate-600 shadow-sm',
+                        'bg-white border-slate-200 text-slate-600 shadow-sm'
+                      ];
+                      
+                      const rankIcons = [
+                        <Trophy className="w-5 h-5 text-yellow-900" />,
+                        <Medal className="w-5 h-5 text-slate-800" />,
+                        <Award className="w-5 h-5 text-amber-50" />,
+                        <span className="font-bold w-5 text-center text-slate-400">4</span>,
+                        <span className="font-bold w-5 text-center text-slate-400">5</span>
+                      ];
+                      
+                      const isTop3 = index < 3;
+                      
+                      return (
+                        <div key={index} className={`flex items-center justify-between p-4 rounded-xl border-2 ${rankColors[index]} ${isTop3 ? 'shadow-lg transform hover:-translate-y-1' : 'hover:border-indigo-200 hover:shadow-md'} transition-all duration-300 relative overflow-hidden group`}>
+                          {isTop3 && (
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl transform translate-x-10 -translate-y-10 group-hover:translate-x-5 transition-transform duration-700" />
+                          )}
+                          <div className="flex items-center space-x-4 relative z-10">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${isTop3 ? 'bg-white/20 backdrop-blur-sm' : 'bg-slate-100'}`}>
+                              {rankIcons[index]}
+                            </div>
+                            <div>
+                              <p className={`font-bold ${isTop3 ? 'text-lg' : 'text-base text-slate-700'}`}>{student.studentName}</p>
+                              <p className={`text-xs mt-0.5 ${isTop3 ? 'opacity-80 font-medium' : 'text-slate-500'}`}>
+                                {new Date(student.submittedAt).toLocaleString('vi-VN')}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right relative z-10">
+                            <div className={`font-black text-2xl drop-shadow-sm`}>
+                              {student.score}
+                            </div>
+                            <div className={`text-[10px] uppercase tracking-wider font-bold ${isTop3 ? 'opacity-75' : 'text-slate-400'}`}>Điểm</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+            <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end">
+              <button
+                onClick={() => setRankingExam(null)}
+                className="px-6 py-2.5 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+              >
+                Đóng
               </button>
             </div>
           </div>
