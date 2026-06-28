@@ -2524,27 +2524,27 @@ export default function TeacherDashboard() {
       {/* Ranking Modal */}
       {rankingExam && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl transform transition-all">
-            <div className="bg-gradient-to-r from-amber-400 to-orange-500 p-6 flex justify-between items-center text-white relative overflow-hidden shrink-0">
+          <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl transform transition-all">
+            <div className="bg-gradient-to-r from-amber-400 to-orange-500 p-5 flex justify-between items-center text-white relative overflow-hidden shrink-0">
               <div className="absolute top-0 right-0 -mr-8 -mt-8 opacity-20 transform rotate-12">
                 <Trophy className="w-32 h-32" />
               </div>
               <div className="relative z-10">
-                <h3 className="text-2xl font-extrabold flex items-center drop-shadow-md">
-                  <Medal className="w-7 h-7 mr-2" /> Bảng Vàng Thành Tích
+                <h3 className="text-xl font-extrabold flex items-center drop-shadow-md">
+                  <Medal className="w-6 h-6 mr-2" /> Bảng Vàng Thành Tích
                 </h3>
-                <p className="text-amber-50 mt-1 text-sm font-medium opacity-90 truncate max-w-xs">{rankingExam.title}</p>
+                <p className="text-amber-50 mt-1 text-xs font-medium opacity-90 truncate max-w-xs">{rankingExam.title}</p>
               </div>
               <button onClick={() => setRankingExam(null)} className="relative z-10 text-white/80 hover:text-white bg-black/10 hover:bg-black/20 p-2 rounded-full transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6 bg-slate-50 relative overflow-y-auto flex-1">
+            <div className="p-5 bg-slate-50 relative">
               {(() => {
                 if (isLoadingRanking) {
                   return (
-                    <div className="flex flex-col items-center justify-center py-10">
-                      <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-3" />
                       <p className="text-slate-500 font-medium">Đang tải bảng xếp hạng...</p>
                     </div>
                   );
@@ -2552,18 +2552,18 @@ export default function TeacherDashboard() {
 
                 if (!rankingData || rankingData.length === 0) {
                   return (
-                    <div className="text-center py-10 flex flex-col items-center">
-                      <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                        <Trophy className="w-10 h-10 text-slate-300" />
+                    <div className="text-center py-8 flex flex-col items-center">
+                      <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+                        <Trophy className="w-8 h-8 text-slate-300" />
                       </div>
-                      <p className="text-slate-500 font-medium text-lg">Chưa có kết quả hoặc học sinh nào nộp bài.</p>
-                      <p className="text-slate-400 text-sm mt-1">Bảng xếp hạng sẽ hiển thị khi có kết quả đầu tiên.</p>
+                      <p className="text-slate-500 font-medium">Chưa có kết quả hoặc học sinh nào nộp bài.</p>
+                      <p className="text-slate-400 text-xs mt-1">Bảng xếp hạng sẽ hiển thị khi có kết quả đầu tiên.</p>
                     </div>
                   );
                 }
 
                 return (
-                  <div className="space-y-3 relative z-10">
+                  <div className="space-y-2 relative z-10">
                     {rankingData.map((student: any, index: number) => {
                       const rankColors = [
                         'bg-gradient-to-r from-yellow-300 to-yellow-500 text-yellow-900 border-yellow-400 shadow-yellow-200/50',
@@ -2574,36 +2574,36 @@ export default function TeacherDashboard() {
                       ];
                       
                       const rankIcons = [
-                        <Trophy className="w-5 h-5 text-yellow-900" />,
-                        <Medal className="w-5 h-5 text-slate-800" />,
-                        <Award className="w-5 h-5 text-amber-50" />,
-                        <span className="font-bold w-5 text-center text-slate-400">4</span>,
-                        <span className="font-bold w-5 text-center text-slate-400">5</span>
+                        <Trophy className="w-4 h-4 text-yellow-900" />,
+                        <Medal className="w-4 h-4 text-slate-800" />,
+                        <Award className="w-4 h-4 text-amber-50" />,
+                        <span className="font-bold w-4 text-center text-slate-400">4</span>,
+                        <span className="font-bold w-4 text-center text-slate-400">5</span>
                       ];
                       
                       const isTop3 = index < 3;
                       
                       return (
-                        <div key={index} className={`flex items-center justify-between p-4 rounded-xl border-2 ${rankColors[index]} ${isTop3 ? 'shadow-lg transform hover:-translate-y-1' : 'hover:border-indigo-200 hover:shadow-md'} transition-all duration-300 relative overflow-hidden group`}>
+                        <div key={index} className={`flex items-center justify-between p-3 rounded-xl border-2 ${rankColors[index]} ${isTop3 ? 'shadow-md transform hover:-translate-y-0.5' : 'hover:border-indigo-200 hover:shadow-sm'} transition-all duration-300 relative overflow-hidden group`}>
                           {isTop3 && (
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl transform translate-x-10 -translate-y-10 group-hover:translate-x-5 transition-transform duration-700" />
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-10 rounded-full blur-2xl transform translate-x-8 -translate-y-8 group-hover:translate-x-4 transition-transform duration-700" />
                           )}
-                          <div className="flex items-center space-x-4 relative z-10">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${isTop3 ? 'bg-white/20 backdrop-blur-sm' : 'bg-slate-100'}`}>
+                          <div className="flex items-center space-x-3 relative z-10">
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold ${isTop3 ? 'bg-white/20 backdrop-blur-sm' : 'bg-slate-100'}`}>
                               {rankIcons[index]}
                             </div>
                             <div>
-                              <p className={`font-bold ${isTop3 ? 'text-lg' : 'text-base text-slate-700'}`}>{student.studentName}</p>
-                              <p className={`text-xs mt-0.5 ${isTop3 ? 'opacity-80 font-medium' : 'text-slate-500'}`}>
+                              <p className={`font-bold ${isTop3 ? 'text-base' : 'text-sm text-slate-700'}`}>{student.studentName}</p>
+                              <p className={`text-[10px] mt-0.5 ${isTop3 ? 'opacity-80 font-medium' : 'text-slate-500'}`}>
                                 {new Date(student.submittedAt).toLocaleString('vi-VN')}
                               </p>
                             </div>
                           </div>
                           <div className="text-right relative z-10">
-                            <div className={`font-black text-2xl drop-shadow-sm`}>
+                            <div className={`font-black text-xl drop-shadow-sm`}>
                               {student.score}
                             </div>
-                            <div className={`text-[10px] uppercase tracking-wider font-bold ${isTop3 ? 'opacity-75' : 'text-slate-400'}`}>Điểm</div>
+                            <div className={`text-[9px] uppercase tracking-wider font-bold ${isTop3 ? 'opacity-75' : 'text-slate-400'}`}>Điểm</div>
                           </div>
                         </div>
                       );
@@ -2612,10 +2612,10 @@ export default function TeacherDashboard() {
                 );
               })()}
             </div>
-            <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end">
+            <div className="bg-gray-50 px-5 py-3 border-t border-gray-100 flex justify-end">
               <button
                 onClick={() => setRankingExam(null)}
-                className="px-6 py-2.5 bg-gray-900 text-white font-medium rounded-xl hover:bg-gray-800 transition-colors shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+                className="px-5 py-2 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
               >
                 Đóng
               </button>
