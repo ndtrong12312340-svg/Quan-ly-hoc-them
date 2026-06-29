@@ -87,12 +87,17 @@ const AppRoutes = () => {
   );
 };
 
+import InAppBrowserCheck from './components/InAppBrowserCheck';
+
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </AuthProvider>
+    <>
+      <InAppBrowserCheck />
+      <AuthProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </AuthProvider>
+    </>
   );
 }
